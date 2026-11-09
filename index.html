@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>제주 여행 가이드</title>
+  <title>일본 여행 가이드</title>
   <style>
     :root {
-      --bg: #0b1f2a;
+      --bg: #0e1230;
       --card: rgba(255, 255, 255, 0.08);
-      --text: #f4fbff;
-      --muted: #b6d0db;
-      --accent: #ff9a3c;
-      --accent2: #19c2b2;
+      --text: #fff7f8;
+      --muted: #c9c6dc;
+      --accent: #e60033;
+      --accent2: #ff7a9a;
+      --gold: #ffd36b;
       --nav-h: 68px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,12 +20,13 @@
     body {
       font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
       color: var(--text);
-      background: radial-gradient(circle at 15% 10%, #14506a 0%, transparent 45%),
-                  radial-gradient(circle at 85% 90%, #7a3b1d 0%, transparent 40%),
+      background: radial-gradient(circle at 12% 8%, #5b1030 0%, transparent 45%),
+                  radial-gradient(circle at 88% 92%, #1d2a6b 0%, transparent 45%),
                   var(--bg);
       background-attachment: fixed;
       min-height: 100vh;
       padding-top: var(--nav-h);
+      overflow-x: hidden;
     }
 
     /* ---------- 네비게이션 ---------- */
@@ -33,13 +35,13 @@
       height: var(--nav-h);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 24px;
-      background: rgba(11, 31, 42, 0.75);
+      background: rgba(14, 18, 48, 0.78);
       backdrop-filter: blur(14px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     }
     .logo {
       font-size: 1.35rem; font-weight: 800; letter-spacing: -0.5px;
-      background: linear-gradient(90deg, var(--accent), #ffd36b);
+      background: linear-gradient(90deg, var(--accent2), var(--gold));
       -webkit-background-clip: text; background-clip: text; color: transparent;
       cursor: pointer; text-decoration: none;
     }
@@ -51,12 +53,11 @@
     }
     nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
     nav a.active {
-      color: #1a1205;
-      background: linear-gradient(135deg, var(--accent), #ffd36b);
-      box-shadow: 0 6px 20px rgba(255, 154, 60, 0.45);
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), #ff4d73);
+      box-shadow: 0 6px 20px rgba(230, 0, 51, 0.5);
     }
 
-    /* 햄버거 버튼 */
     .hamburger {
       display: none; width: 44px; height: 44px; border: 0; border-radius: 12px;
       background: rgba(255, 255, 255, 0.1); cursor: pointer;
@@ -78,7 +79,7 @@
 
     .hero {
       text-align: center; padding: 56px 20px; border-radius: 28px; margin-bottom: 32px;
-      background: linear-gradient(135deg, rgba(25, 194, 178, 0.35), rgba(255, 154, 60, 0.35));
+      background: linear-gradient(135deg, rgba(230, 0, 51, 0.32), rgba(60, 80, 200, 0.32));
       border: 1px solid rgba(255, 255, 255, 0.18);
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
     }
@@ -97,10 +98,56 @@
     .card p { color: var(--muted); line-height: 1.6; font-size: 0.95rem; }
     .tag {
       display: inline-block; margin-top: 12px; padding: 4px 12px; border-radius: 999px;
-      font-size: 0.8rem; font-weight: 700; color: #06231f; background: var(--accent2);
+      font-size: 0.8rem; font-weight: 700; color: #fff; background: var(--accent);
     }
 
     footer { text-align: center; color: var(--muted); padding: 30px 20px; font-size: 0.9rem; }
+
+    /* ---------- 일본 섬 (클릭하면 깨짐) ---------- */
+    .stage {
+      position: relative; width: 100%; margin: 28px auto 8px;
+      display: flex; justify-content: center;
+    }
+    .island-box { position: relative; transform-origin: top center; }
+    .island {
+      position: absolute; inset: 0; cursor: pointer;
+      filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.45));
+      animation: float 4s ease-in-out infinite;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .island.broken { cursor: default; pointer-events: none; animation: none; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    .island:hover .piece { filter: brightness(1.08); }
+
+    .coast, .clip, .face { position: absolute; inset: 0; }
+    .coast { background: linear-gradient(135deg, #ffe3a8, #f2b866); transition: opacity 0.35s; }
+    .island.broken .coast { opacity: 0; }
+
+    .piece {
+      position: absolute; inset: 0;
+      transition: transform 1.1s cubic-bezier(0.2, 0.7, 0.2, 1),
+                  filter 1.1s ease, opacity 1.1s ease;
+      transition-delay: var(--d, 0ms);
+    }
+    .island.broken .piece {
+      transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(var(--sc));
+      filter: blur(16px);
+      opacity: 0;
+    }
+
+    .hint { margin-top: 14px; color: var(--muted); font-size: 0.98rem; min-height: 1.6em; }
+    kbd {
+      display: inline-block; padding: 2px 9px; border-radius: 7px; font-family: inherit; font-weight: 700;
+      color: #fff; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 2px 0 rgba(255, 255, 255, 0.25);
+    }
+    .restore-btn {
+      display: none; margin: 10px auto 0; padding: 10px 22px; border: 0; border-radius: 999px;
+      font: inherit; font-weight: 700; color: #fff; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), #ff4d73);
+      box-shadow: 0 6px 20px rgba(230, 0, 51, 0.45);
+    }
+    .restore-btn.show { display: inline-block; }
 
     /* ---------- 모바일 ---------- */
     @media (max-width: 768px) {
@@ -108,7 +155,7 @@
       .hamburger { display: flex; }
       nav {
         position: fixed; top: var(--nav-h); left: 0; right: 0;
-        background: rgba(11, 31, 42, 0.97); backdrop-filter: blur(14px);
+        background: rgba(14, 18, 48, 0.97); backdrop-filter: blur(14px);
         max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
         border-bottom: 1px solid rgba(255, 255, 255, 0.12);
       }
@@ -123,33 +170,43 @@
 <body>
 
   <header>
-    <a class="logo" href="#jeju">🌴 JEJU GUIDE</a>
+    <a class="logo" href="#japan">🗾 JAPAN GUIDE</a>
     <button class="hamburger" id="hamburger" aria-label="메뉴 열기" aria-expanded="false" aria-controls="nav">
       <span></span><span></span><span></span>
     </button>
     <nav id="nav">
       <ul>
-        <li><a href="#jeju" data-page="jeju">🏝️ 제주도</a></li>
+        <li><a href="#japan" data-page="japan">🗾 일본</a></li>
         <li><a href="#hotel" data-page="hotel">🏨 호텔</a></li>
-        <li><a href="#food" data-page="food">🍜 음식점</a></li>
+        <li><a href="#food" data-page="food">🍣 음식점</a></li>
         <li><a href="#bus" data-page="bus">🚌 버스</a></li>
-        <li><a href="#spot" data-page="spot">📸 관광지</a></li>
+        <li><a href="#spot" data-page="spot">⛩️ 관광지</a></li>
       </ul>
     </nav>
   </header>
 
   <main>
-    <!-- 제주도 -->
-    <section class="page" id="jeju">
+    <!-- 일본 -->
+    <section class="page" id="japan">
       <div class="hero">
-        <div class="big">🏝️</div>
         <h1>반갑습니다, 김태원</h1>
-        <p>바람과 돌, 그리고 바다의 섬 <b>제주도</b>에 오신 것을 환영합니다.<br>한라산부터 푸른 해변까지, 함께 여행을 떠나볼까요?</p>
+        <p>벚꽃과 신사, 라멘과 온천의 나라 <b>일본</b>에 오신 것을 환영합니다.</p>
+
+        <div class="stage" id="stage">
+          <div class="island-box" id="islandBox">
+            <div class="island" id="island" role="button" aria-label="일본 섬. 클릭하면 부서집니다">
+              <div class="coast" id="coast"></div>
+            </div>
+          </div>
+        </div>
+        <p class="hint" id="hint">🏝️ 섬을 클릭해 보세요!</p>
+        <button class="restore-btn" id="restoreBtn" type="button">🔧 복구하기 (Ctrl + C)</button>
       </div>
+
       <div class="grid">
-        <div class="card"><div class="emoji">🌊</div><h3>푸른 바다</h3><p>협재, 함덕, 김녕 해변의 에메랄드빛 바다가 기다리고 있어요.</p></div>
-        <div class="card"><div class="emoji">⛰️</div><h3>한라산</h3><p>대한민국 최고봉에서 만나는 사계절의 절경.</p></div>
-        <div class="card"><div class="emoji">🍊</div><h3>감귤 &amp; 한라봉</h3><p>겨울에는 귤 따기 체험, 사계절 달콤한 제주 과일.</p></div>
+        <div class="card"><div class="emoji">🌸</div><h3>벚꽃의 계절</h3><p>3~4월, 도쿄·교토의 거리가 분홍빛으로 물드는 하나미.</p></div>
+        <div class="card"><div class="emoji">🗻</div><h3>후지산</h3><p>일본의 상징, 사계절 어느 때나 감탄이 나오는 절경.</p></div>
+        <div class="card"><div class="emoji">♨️</div><h3>온천 문화</h3><p>하코네, 벳푸, 구사츠에서 즐기는 따뜻한 온천 여행.</p></div>
       </div>
     </section>
 
@@ -157,28 +214,28 @@
     <section class="page" id="hotel">
       <div class="hero">
         <div class="big">🏨</div>
-        <h1>제주 호텔 &amp; 숙소</h1>
-        <p>오션뷰부터 감성 독채 펜션까지, 취향에 맞는 쉼터를 골라보세요.</p>
+        <h1>일본 호텔 &amp; 숙소</h1>
+        <p>전통 료칸부터 도심 비즈니스 호텔까지, 취향에 맞는 쉼터를 골라보세요.</p>
       </div>
       <div class="grid">
-        <div class="card"><div class="emoji">🌅</div><h3>오션뷰 리조트</h3><p>객실에서 바로 바다 일출을 감상하는 프리미엄 숙소.</p><span class="tag">중문 · 서귀포</span></div>
-        <div class="card"><div class="emoji">🏡</div><h3>감성 독채 펜션</h3><p>돌담과 마당이 있는 조용한 프라이빗 스테이.</p><span class="tag">애월 · 한림</span></div>
-        <div class="card"><div class="emoji">🛏️</div><h3>가성비 호텔</h3><p>공항과 가깝고 깔끔한 시내 비즈니스 호텔.</p><span class="tag">제주시</span></div>
+        <div class="card"><div class="emoji">🏯</div><h3>전통 료칸</h3><p>다다미방과 가이세키 요리, 노천 온천이 있는 일본식 숙소.</p><span class="tag">교토 · 하코네</span></div>
+        <div class="card"><div class="emoji">🌃</div><h3>도심 시티 호텔</h3><p>역과 가깝고 깔끔한 도쿄·오사카의 비즈니스 호텔.</p><span class="tag">도쿄 · 오사카</span></div>
+        <div class="card"><div class="emoji">🛏️</div><h3>캡슐 호텔</h3><p>작지만 알찬 일본만의 이색 숙박 체험.</p><span class="tag">가성비</span></div>
       </div>
     </section>
 
     <!-- 음식점 -->
     <section class="page" id="food">
       <div class="hero">
-        <div class="big">🍜</div>
-        <h1>제주 맛집 지도</h1>
-        <p>흑돼지, 해산물, 고기국수까지! 제주에서 꼭 먹어야 할 음식들.</p>
+        <div class="big">🍣</div>
+        <h1>일본 맛집 지도</h1>
+        <p>스시, 라멘, 타코야키까지! 일본에서 꼭 먹어야 할 음식들.</p>
       </div>
       <div class="grid">
-        <div class="card"><div class="emoji">🥓</div><h3>흑돼지 구이</h3><p>쫄깃하고 고소한 제주 대표 흑돼지, 멜젓에 찍어 한입.</p><span class="tag">필수 코스</span></div>
-        <div class="card"><div class="emoji">🍲</div><h3>고기국수</h3><p>진한 사골 육수와 두툼한 수육이 올라간 든든한 한 그릇.</p><span class="tag">현지인 추천</span></div>
-        <div class="card"><div class="emoji">🐟</div><h3>갈치조림 &amp; 회</h3><p>싱싱한 제주 앞바다 해산물을 바로 맛보세요.</p><span class="tag">해산물</span></div>
-        <div class="card"><div class="emoji">☕</div><h3>감성 카페</h3><p>바다가 보이는 카페에서 한라봉 에이드 한 잔.</p><span class="tag">디저트</span></div>
+        <div class="card"><div class="emoji">🍣</div><h3>스시 &amp; 사시미</h3><p>츠키지·도요스 시장 근처의 신선한 해산물 한 점.</p><span class="tag">필수 코스</span></div>
+        <div class="card"><div class="emoji">🍜</div><h3>라멘</h3><p>돈코츠, 쇼유, 미소… 지역마다 다른 국물의 매력.</p><span class="tag">후쿠오카 · 삿포로</span></div>
+        <div class="card"><div class="emoji">🐙</div><h3>타코야키 &amp; 오코노미야키</h3><p>오사카 길거리에서 즐기는 뜨끈한 철판 요리.</p><span class="tag">오사카</span></div>
+        <div class="card"><div class="emoji">🍡</div><h3>와가시 &amp; 말차</h3><p>교토 찻집에서 맛보는 전통 디저트.</p><span class="tag">디저트</span></div>
       </div>
     </section>
 
@@ -186,65 +243,180 @@
     <section class="page" id="bus">
       <div class="hero">
         <div class="big">🚌</div>
-        <h1>제주 버스 이용 안내</h1>
-        <p>렌터카 없이도 섬 곳곳을 편하게! 노선 유형만 알면 쉬워요.</p>
+        <h1>일본 버스 이용 안내</h1>
+        <p>전철과 함께 버스를 쓰면 여행이 훨씬 편해져요.</p>
       </div>
       <div class="grid">
-        <div class="card"><div class="emoji">🔵</div><h3>간선버스 (파랑)</h3><p>제주시와 서귀포를 잇는 주요 노선. 빠르고 배차가 좋아요.</p></div>
-        <div class="card"><div class="emoji">🟢</div><h3>지선버스 (초록)</h3><p>마을과 간선 정류장을 연결하는 지역 노선.</p></div>
-        <div class="card"><div class="emoji">🔴</div><h3>급행버스 (빨강)</h3><p>공항과 주요 관광지를 빠르게 연결하는 노선.</p></div>
-        <div class="card"><div class="emoji">📱</div><h3>실시간 앱</h3><p>도착 시간 확인과 환승 정보는 버스 앱으로 간편하게.</p></div>
+        <div class="card"><div class="emoji">🚪</div><h3>뒷문 승차, 앞문 하차</h3><p>많은 노선이 뒷문으로 타고 내릴 때 앞문에서 요금을 냅니다.</p></div>
+        <div class="card"><div class="emoji">💳</div><h3>IC 카드</h3><p>스이카·파스모·이코카를 태그하면 버스와 전철을 모두 이용.</p></div>
+        <div class="card"><div class="emoji">🌙</div><h3>고속·야간버스</h3><p>도쿄–오사카 같은 장거리를 저렴하게 이동하는 방법.</p></div>
+        <div class="card"><div class="emoji">📱</div><h3>환승 안내 앱</h3><p>구글맵이나 Navitime으로 노선과 시간을 확인하세요.</p></div>
       </div>
     </section>
 
     <!-- 관광지 -->
     <section class="page" id="spot">
       <div class="hero">
-        <div class="big">📸</div>
-        <h1>제주 인기 관광지</h1>
-        <p>인생샷이 쏟아지는 제주의 명소들을 모았어요.</p>
+        <div class="big">⛩️</div>
+        <h1>일본 인기 관광지</h1>
+        <p>인생샷이 쏟아지는 일본의 명소들을 모았어요.</p>
       </div>
       <div class="grid">
-        <div class="card"><div class="emoji">🌋</div><h3>성산일출봉</h3><p>유네스코 세계자연유산, 분화구 위에서 보는 일출.</p><span class="tag">동부</span></div>
-        <div class="card"><div class="emoji">🌲</div><h3>비자림</h3><p>천년 비자나무 숲길을 걷는 힐링 산책.</p><span class="tag">동부</span></div>
-        <div class="card"><div class="emoji">💧</div><h3>천지연 폭포</h3><p>밤에도 아름다운 서귀포의 대표 폭포.</p><span class="tag">남부</span></div>
-        <div class="card"><div class="emoji">🌾</div><h3>새별오름</h3><p>억새가 물결치는 노을 맛집 오름.</p><span class="tag">서부</span></div>
+        <div class="card"><div class="emoji">⛩️</div><h3>후시미 이나리</h3><p>붉은 도리이 천 개가 이어지는 교토의 대표 명소.</p><span class="tag">교토</span></div>
+        <div class="card"><div class="emoji">🏰</div><h3>오사카 성</h3><p>웅장한 천수각과 봄의 벚꽃 풍경.</p><span class="tag">오사카</span></div>
+        <div class="card"><div class="emoji">🗼</div><h3>도쿄 타워 &amp; 시부야</h3><p>야경과 스크램블 교차로가 있는 도쿄의 심장.</p><span class="tag">도쿄</span></div>
+        <div class="card"><div class="emoji">🎋</div><h3>아라시야마 대나무숲</h3><p>하늘 높이 뻗은 대나무 사이를 걷는 산책길.</p><span class="tag">교토</span></div>
       </div>
     </section>
   </main>
 
-  <footer>© 2026 JEJU GUIDE · Made with 💙 by david213904</footer>
+  <footer>© 2026 JAPAN GUIDE · Made with ❤️ by david213904</footer>
 
   <script>
+    /* ===== 메뉴 / 페이지 전환 ===== */
     const pages = document.querySelectorAll('.page');
     const links = document.querySelectorAll('nav a');
     const nav = document.getElementById('nav');
     const burger = document.getElementById('hamburger');
 
     function show(id) {
-      if (!document.getElementById(id)) id = 'jeju';
+      if (!document.getElementById(id)) id = 'japan';
       pages.forEach(p => p.classList.toggle('show', p.id === id));
       links.forEach(a => a.classList.toggle('active', a.dataset.page === id));
       window.scrollTo({ top: 0 });
+      if (id === 'japan') fitIsland();
     }
-
     function closeMenu() {
       nav.classList.remove('open');
       burger.classList.remove('open');
       burger.setAttribute('aria-expanded', 'false');
     }
-
     burger.addEventListener('click', () => {
       const open = nav.classList.toggle('open');
       burger.classList.toggle('open', open);
       burger.setAttribute('aria-expanded', String(open));
     });
-
     links.forEach(a => a.addEventListener('click', () => { show(a.dataset.page); closeMenu(); }));
-    document.querySelector('.logo').addEventListener('click', () => { show('jeju'); closeMenu(); });
+    document.querySelector('.logo').addEventListener('click', () => { show('japan'); closeMenu(); });
     window.addEventListener('hashchange', () => show(location.hash.slice(1)));
-    window.addEventListener('resize', () => { if (window.innerWidth > 768) closeMenu(); });
-    show(location.hash.slice(1) || 'jeju');
+    window.addEventListener('resize', () => { if (window.innerWidth > 768) closeMenu(); fitIsland(); });
+
+    /* ===== 일본 국기 섬: 클릭하면 깨지고 블러와 함께 사라짐 ===== */
+    const W = 460, H = 331;                       // 섬의 기준 크기(px)
+    const stage = document.getElementById('stage');
+    const box = document.getElementById('islandBox');
+    const island = document.getElementById('island');
+    const coast = document.getElementById('coast');
+    const hint = document.getElementById('hint');
+    const restoreBtn = document.getElementById('restoreBtn');
+    box.style.width = W + 'px';
+    box.style.height = H + 'px';
+
+    // 섬 모양(불규칙한 둥근 윤곽)
+    function blob(scale) {
+      const pts = [];
+      for (let i = 0; i < 90; i++) {
+        const t = (i / 90) * Math.PI * 2;
+        const r = 1 + 0.12 * Math.sin(2 * t + 0.5) + 0.08 * Math.sin(3 * t + 1.7) + 0.05 * Math.sin(5 * t);
+        const x = 0.5 + scale * r * Math.cos(t);
+        const y = 0.5 + scale * r * Math.sin(t);
+        pts.push((x * 100).toFixed(2) + '% ' + (y * 100).toFixed(2) + '%');
+      }
+      return 'polygon(' + pts.join(',') + ')';
+    }
+    const islandShape = blob(0.36);
+    coast.style.clipPath = blob(0.39);
+
+    // 일본 국기 (흰 바탕 + 붉은 원)
+    const flagSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+      '<rect width="100%" height="100%" fill="#ffffff"/>' +
+      '<circle cx="' + W / 2 + '" cy="' + H / 2 + '" r="' + H * 0.28 + '" fill="#bc002d"/></svg>';
+    const flagUrl = 'url("data:image/svg+xml,' + encodeURIComponent(flagSvg) + '")';
+
+    // 불규칙한 삼각형 조각으로 분할
+    const COLS = 7, ROWS = 5;
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const cw = W / COLS, ch = H / ROWS;
+    const grid = [];
+    for (let j = 0; j <= ROWS; j++) {
+      grid[j] = [];
+      for (let i = 0; i <= COLS; i++) {
+        const edge = i === 0 || j === 0 || i === COLS || j === ROWS;
+        grid[j][i] = [i * cw + (edge ? 0 : rnd(-0.32, 0.32) * cw), j * ch + (edge ? 0 : rnd(-0.32, 0.32) * ch)];
+      }
+    }
+    const tris = [];
+    for (let j = 0; j < ROWS; j++) {
+      for (let i = 0; i < COLS; i++) {
+        const a = grid[j][i], b = grid[j][i + 1], c = grid[j + 1][i + 1], d = grid[j + 1][i];
+        if (Math.random() < 0.5) { tris.push([a, b, c]); tris.push([a, c, d]); }
+        else { tris.push([a, b, d]); tris.push([b, c, d]); }
+      }
+    }
+    tris.forEach(tri => {
+      const cx = (tri[0][0] + tri[1][0] + tri[2][0]) / 3;
+      const cy = (tri[0][1] + tri[1][1] + tri[2][1]) / 3;
+      const dx = cx - W / 2, dy = cy - H / 2;
+      const k = rnd(0.9, 2.1);
+      const piece = document.createElement('div');
+      piece.className = 'piece';
+      piece.style.transformOrigin = cx + 'px ' + cy + 'px';
+      piece.style.setProperty('--tx', (dx * k + rnd(-40, 40)).toFixed(0) + 'px');
+      piece.style.setProperty('--ty', (dy * k + rnd(60, 220)).toFixed(0) + 'px');   // 아래로 떨어지는 느낌
+      piece.style.setProperty('--rot', rnd(-170, 170).toFixed(0) + 'deg');
+      piece.style.setProperty('--sc', rnd(0.45, 0.9).toFixed(2));
+      piece.style.setProperty('--d', Math.round(Math.hypot(dx, dy) * 0.35 + rnd(0, 80)) + 'ms');
+      const clip = document.createElement('div');
+      clip.className = 'clip';
+      clip.style.clipPath = 'polygon(' + tri.map(p => p[0].toFixed(1) + 'px ' + p[1].toFixed(1) + 'px').join(',') + ')';
+      const face = document.createElement('div');
+      face.className = 'face';
+      face.style.clipPath = islandShape;
+      face.style.backgroundImage = flagUrl;
+      face.style.backgroundSize = '100% 100%';
+      clip.appendChild(face);
+      piece.appendChild(clip);
+      island.appendChild(piece);
+    });
+
+    // 화면 폭에 맞춰 섬 크기 조절
+    function fitIsland() {
+      const avail = Math.min(stage.parentElement.clientWidth - 40, W);
+      const k = avail > 0 ? Math.min(1, avail / W) : 1;
+      box.style.transform = 'scale(' + k + ')';
+      stage.style.height = (H * k + 14) + 'px';
+    }
+
+    let broken = false;
+    function breakIsland() {
+      if (broken) return;
+      broken = true;
+      island.classList.add('broken');
+      hint.innerHTML = '💥 섬이 사라졌어요! <kbd>Ctrl</kbd> + <kbd>C</kbd> 를 눌러 복구하세요.';
+      restoreBtn.classList.add('show');
+    }
+    function restoreIsland() {
+      if (!broken) return;
+      broken = false;
+      island.classList.remove('broken');
+      hint.textContent = '🏝️ 섬이 복구되었어요! 다시 클릭해 보세요.';
+      restoreBtn.classList.remove('show');
+    }
+    island.addEventListener('click', breakIsland);
+    restoreBtn.addEventListener('click', restoreIsland);
+
+    // 복구 단축키: Ctrl + C (섬이 부서진 상태일 때만 동작, 평소 복사 기능은 그대로)
+    document.addEventListener('keydown', e => {
+      if (!broken) return;
+      if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyC' || e.key.toLowerCase() === 'c')) {
+        e.preventDefault();
+        restoreIsland();
+      }
+    });
+
+    fitIsland();
+    show(location.hash.slice(1) || 'japan');
   </script>
 </body>
 </html>
