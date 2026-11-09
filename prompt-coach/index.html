@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프롬프트 코치 - 바이브코딩 프롬프트 점검기</title>
+<meta name="description" content="바이브코딩용 프롬프트를 6가지 기준으로 점수화하고, 빠진 부분을 채워 주는 무료 도구">
+<style>
+:root{--bg:#0f1226;--card:#1a1e3a;--line:#2c3260;--text:#f2f3ff;--muted:#a3a8cf;--ok:#3ddc97;--warn:#ffc857;--bad:#ff6b6b;--accent:#7c8cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding:24px 16px 64px}
+.wrap{max-width:1040px;margin:0 auto}
+h1{font-size:1.9rem}h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:6px 0 24px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tabs button{background:var(--card);color:var(--muted);border:1px solid var(--line);padding:9px 18px;border-radius:999px;cursor:pointer;font-size:.95rem}
+.tabs button.on{background:var(--accent);color:#0b0d20;border-color:var(--accent);font-weight:700}
+.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h2{font-size:1.05rem;margin-bottom:10px}
+textarea,input{width:100%;background:#11142c;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit}
+textarea{min-height:260px;resize:vertical}
+textarea:focus,input:focus{outline:2px solid var(--accent);border-color:transparent}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{background:var(--accent);color:#0b0d20;border:0;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;font:inherit;font-weight:700}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);font-weight:500}
+.score{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.ring{--p:0;--c:var(--bad);width:92px;height:92px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),#11142c 0);display:grid;place-items:center;flex:none}
+.ring b{width:72px;height:72px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:1.5rem}
+.verdict{font-weight:700}.verdict small{display:block;color:var(--muted);font-weight:400}
+.item{border-top:1px solid var(--line);padding:10px 0}
+.item .t{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.item .tip{color:var(--muted);font-size:.9rem;margin-top:2px}
+.ok{color:var(--ok)}.no{color:var(--bad)}
+label{display:block;font-size:.9rem;color:var(--muted);margin:12px 0 4px}
+.hist li{list-style:none;border-top:1px solid var(--line);padding:8px 0;cursor:pointer;font-size:.9rem;display:flex;justify-content:space-between;gap:8px}
+.hist li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hidden{display:none}
+footer{margin-top:28px;color:var(--muted);font-size:.85rem;text-align:center}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ok);color:#06130d;padding:10px 18px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;pointer-events:none}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎯 프롬프트 <span>코치</span></h1>
+  <p class="sub">AI에게 "그냥 만들어줘"라고 하면 결과도 그냥 그렇습니다. 프롬프트를 점검하고 구조화해 보세요. 입력한 내용은 서버로 전송되지 않습니다.</p>
+
+  <div class="tabs">
+    <button id="tab-check" class="on">점검하기</button>
+    <button id="tab-build">만들기</button>
+  </div>
+
+  <!-- 점검 -->
+  <div id="view-check" class="grid">
+    <div class="card">
+      <h2>내 프롬프트</h2>
+      <textarea id="prompt" placeholder="예) 할 일 관리 웹앱을 만들어줘. HTML/CSS/JS만 사용하고, 추가/삭제/완료 기능이 있어야 해. 모바일에서도 보기 좋게 다크모드로. 외부 라이브러리는 쓰지 말고, 새로고침해도 데이터가 남으면 완료."></textarea>
+      <div class="row">
+        <button class="btn" id="copy">복사</button>
+        <button class="btn ghost" id="sample">나쁜 예시 불러오기</button>
+        <button class="btn ghost" id="sample2">좋은 예시 불러오기</button>
+        <button class="btn ghost" id="clear">지우기</button>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="score">
+          <div class="ring" id="ring"><b id="num">0</b></div>
+          <div class="verdict" id="verdict">프롬프트를 입력해 보세요<small>6개 항목을 자동으로 점검합니다</small></div>
+        </div>
+        <div id="items"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>최근 기록</h2>
+        <ul class="hist" id="hist"></ul>
+        <p id="histEmpty" style="color:var(--muted);font-size:.9rem">아직 기록이 없습니다. 점검 후 '저장'을 눌러 보세요.</p>
+        <div class="row"><button class="btn ghost" id="save">현재 프롬프트 저장</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 만들기 -->
+  <div id="view-build" class="grid hidden">
+    <div class="card">
+      <h2>빈칸을 채우면 프롬프트가 완성됩니다</h2>
+      <label>1. 무엇을 만들까요? (목표 · 사용자)</label><input id="b-goal" placeholder="예) 대학생이 팀플 일정을 조율하는 웹앱">
+      <label>2. 기술 스택 · 환경</label><input id="b-stack" placeholder="예) HTML/CSS/JS 단일 파일, 외부 라이브러리 없음">
+      <label>3. 핵심 기능 (쉼표로 구분)</label><input id="b-feat" placeholder="예) 일정 추가, 투표, 공유 링크">
+      <label>4. 디자인 · 분위기</label><input id="b-design" placeholder="예) 다크모드, 둥근 카드, 모바일 우선">
+      <label>5. 제약 조건 · 하지 말 것</label><input id="b-limit" placeholder="예) 로그인 없음, 서버 없음, 한 파일로">
+      <label>6. 완료 기준</label><input id="b-done" placeholder="예) 새로고침해도 데이터 유지, 모바일에서 깨지지 않음">
+    </div>
+    <div class="card">
+      <h2>생성된 프롬프트</h2>
+      <textarea id="b-out" readonly style="min-height:340px"></textarea>
+      <div class="row">
+        <button class="btn" id="b-copy">복사</button>
+        <button class="btn ghost" id="b-check">점검 탭으로 보내기</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>Made with Claude Code · 바이브코딩 해커톤 프로젝트</footer>
+</div>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const CRITERIA = [
+  {k:'목표', w:20, tip:'누가 쓰는 어떤 서비스인지 한 문장으로 적어 보세요. (예: "대학생용 팀플 일정 조율 웹앱")',
+   test:t=>/(만들|제작|개발|구현|build|create|make)/i.test(t) && t.replace(/\s/g,'').length>=15},
+  {k:'기술 스택', w:15, tip:'사용할 언어/프레임워크/환경을 지정하세요. (예: HTML/CSS/JS 단일 파일, React, Python)',
+   test:t=>/(html|css|javascript|js|typescript|react|vue|next|python|flask|node|streamlit|단일 ?파일|라이브러리)/i.test(t)},
+  {k:'핵심 기능', w:20, tip:'기능을 구체적으로 나열하세요. (예: 추가, 삭제, 완료 체크, 필터)',
+   test:t=>/(기능|추가|삭제|수정|검색|저장|필터|공유|로그인|입력|목록|버튼|차트|계산|투표)/.test(t) && (t.match(/[,·、\n\-•]/g)||[]).length>=2},
+  {k:'디자인', w:15, tip:'분위기·색상·반응형 여부를 알려 주세요. (예: 다크모드, 모바일 우선, 둥근 카드)',
+   test:t=>/(디자인|다크|라이트|색|컬러|반응형|모바일|ui|ux|레이아웃|카드|폰트|깔끔|감성)/i.test(t)},
+  {k:'제약 조건', w:15, tip:'하지 말아야 할 것과 한계를 정해 두면 AI가 엇나가지 않습니다. (예: 외부 API 금지, 서버 없음)',
+   test:t=>/(말고|없이|금지|하지 ?마|제외|만 사용|만 쓰|최대|이내|반드시|무료|오프라인)/.test(t)},
+  {k:'완료 기준', w:15, tip:'어떻게 되면 성공인지 적으세요. (예: 새로고침해도 데이터가 남으면 완료)',
+   test:t=>/(완료|성공|동작|되면|남아|확인|테스트|통과|깨지지|기준)/.test(t)}
+];
+
+function evaluate(text){
+  let score=0; const res=CRITERIA.map(c=>{const ok=c.test(text); if(ok) score+=c.w; return {...c,ok}});
+  return {score,res};
+}
+function render(){
+  const text=$('prompt').value.trim();
+  const {score,res}=evaluate(text);
+  const s = text ? score : 0;
+  const color = s>=80?'var(--ok)':s>=50?'var(--warn)':'var(--bad)';
+  $('ring').style.setProperty('--p',s); $('ring').style.setProperty('--c',color);
+  $('num').textContent=s;
+  const msg = !text?['프롬프트를 입력해 보세요','6개 항목을 자동으로 점검합니다']
+    : s>=80?['훌륭합니다 🎉','이대로 AI에게 보내도 좋아요']
+    : s>=50?['괜찮지만 아쉬워요','빨간 항목만 채우면 결과가 확 좋아집니다']
+    : ['너무 모호해요','AI가 추측해야 할 부분이 많습니다'];
+  $('verdict').innerHTML=msg[0]+'<small>'+msg[1]+'</small>';
+  $('items').innerHTML=res.map(r=>`<div class="item"><div class="t"><span>${r.k}</span><span class="${r.ok&&text?'ok':'no'}">${r.ok&&text?'✔ 충족':'✘ 부족'} · ${r.w}점</span></div>${r.ok&&text?'':`<div class="tip">💡 ${r.tip}</div>`}</div>`).join('');
+}
+
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400)}
+async function copy(text){
+  try{await navigator.clipboard.writeText(text);toast('복사했어요!')}
+  catch{const a=document.createElement('textarea');a.value=text;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();toast('복사했어요!')}
+}
+
+// 기록
+const KEY='prompt-coach-history';
+function loadHist(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return[]}}
+function saveHist(h){try{localStorage.setItem(KEY,JSON.stringify(h.slice(0,8)))}catch{}}
+function renderHist(){
+  const h=loadHist(); $('histEmpty').classList.toggle('hidden',h.length>0);
+  $('hist').innerHTML=''; h.forEach(x=>{
+    const li=document.createElement('li');
+    li.innerHTML='<span></span><span></span>'; li.children[0].textContent=x.text.replace(/\s+/g,' ');
+    li.children[1].textContent=x.score+'점'; li.onclick=()=>{$('prompt').value=x.text;render()};
+    $('hist').appendChild(li);
+  });
+}
+
+$('prompt').addEventListener('input',render);
+$('copy').onclick=()=>$('prompt').value.trim()?copy($('prompt').value):toast('내용이 없어요');
+$('clear').onclick=()=>{$('prompt').value='';render()};
+$('sample').onclick=()=>{$('prompt').value='할 일 앱 만들어줘';render()};
+$('sample2').onclick=()=>{$('prompt').value='대학생이 쓰는 할 일 관리 웹앱을 만들어줘.\n- 기술: HTML/CSS/JS 단일 파일, 외부 라이브러리 없이\n- 기능: 할 일 추가, 삭제, 완료 체크, 완료/미완료 필터\n- 디자인: 다크모드, 둥근 카드, 모바일 우선 반응형\n- 제약: 서버나 로그인 없이 동작해야 해\n- 완료 기준: 새로고침해도 데이터가 남고 모바일에서 레이아웃이 깨지지 않으면 완료';render()};
+$('save').onclick=()=>{
+  const text=$('prompt').value.trim(); if(!text) return toast('내용이 없어요');
+  const h=loadHist().filter(x=>x.text!==text); h.unshift({text,score:evaluate(text).score}); saveHist(h); renderHist(); toast('저장했어요');
+};
+
+// 탭
+function tab(w){
+  $('view-check').classList.toggle('hidden',w!=='check'); $('view-build').classList.toggle('hidden',w!=='build');
+  $('tab-check').classList.toggle('on',w==='check'); $('tab-build').classList.toggle('on',w==='build');
+}
+$('tab-check').onclick=()=>tab('check'); $('tab-build').onclick=()=>tab('build');
+
+// 빌더
+const F=['goal','stack','feat','design','limit','done'];
+function build(){
+  const v=Object.fromEntries(F.map(f=>[f,$('b-'+f).value.trim()]));
+  const L=[];
+  if(v.goal)L.push(`${v.goal}을(를) 만들어줘.`);
+  if(v.stack)L.push(`- 기술: ${v.stack}`);
+  if(v.feat)L.push(`- 기능: ${v.feat}`);
+  if(v.design)L.push(`- 디자인: ${v.design}`);
+  if(v.limit)L.push(`- 제약: ${v.limit}`);
+  if(v.done)L.push(`- 완료 기준: ${v.done}`);
+  if(L.length)L.push('\n먼저 구현 계획을 3줄로 요약한 뒤 코드를 작성하고, 실행 방법도 알려줘.');
+  $('b-out').value=L.join('\n');
+}
+F.forEach(f=>$('b-'+f).addEventListener('input',build));
+$('b-copy').onclick=()=>$('b-out').value?copy($('b-out').value):toast('빈칸을 먼저 채워 주세요');
+$('b-check').onclick=()=>{$('prompt').value=$('b-out').value;render();tab('check')};
+
+render(); renderHist(); build();
+</script>
+</body>
+</html>
