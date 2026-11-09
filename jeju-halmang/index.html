@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>할망의 한 동 · 제주 인터랙티브 스토리</title>
+<meta name="description" content="설문대할망 신화를 관람자의 손으로 완성하는 인터랙티브 스토리 미디어아트">
+<style>
+:root{--gold:#ffd36b;--ink:#f6f1ff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#05060f;color:var(--ink);font-family:"Noto Serif KR","Nanum Myeongjo","Apple SD Gothic Neo","Malgun Gothic",serif}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+header{position:fixed;top:0;left:0;right:0;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;z-index:5;pointer-events:none}
+.brand{font-weight:700;letter-spacing:.04em}.brand small{display:block;font-weight:400;font-size:.7rem;opacity:.65;letter-spacing:0}
+.dots{display:flex;gap:8px}.dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.25);transition:.4s}.dots i.on{background:var(--gold);box-shadow:0 0 10px var(--gold)}
+#snd{pointer-events:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1rem}
+#snd.off{opacity:.5}
+main{pointer-events:none;position:fixed;left:0;right:0;bottom:0;z-index:4;padding:56px 20px calc(24px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(4,5,14,.9) 40%,rgba(4,5,14,0));display:flex;flex-direction:column;align-items:center;gap:14px}
+#txt{pointer-events:auto;max-width:640px;font-size:clamp(1rem,2.6vw,1.2rem);line-height:1.95;text-align:center;white-space:pre-line;min-height:3em;cursor:pointer;text-shadow:0 2px 12px #000}
+#btns button,#btns form{pointer-events:auto}
+#btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:680px;min-height:46px}
+#btns button,#start button,.go{font:inherit;color:var(--ink);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.35);padding:11px 20px;border-radius:999px;cursor:pointer;backdrop-filter:blur(6px);transition:.25s;font-size:.95rem}
+#btns button:hover,#btns button:focus-visible,#start button:hover{background:rgba(255,211,107,.2);border-color:var(--gold);outline:none}
+#btns button.hold{padding:16px 34px;font-size:1.05rem;border-color:var(--gold);touch-action:none;user-select:none}
+#btns button.hold.down{background:rgba(255,211,107,.35)}
+#hint{font-size:.85rem;color:var(--gold);opacity:.9;min-height:1.2em;font-family:system-ui,"Malgun Gothic",sans-serif}
+#cap{font-size:.72rem;opacity:.55;font-family:system-ui,"Malgun Gothic",sans-serif;text-align:center}
+form{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+input{font:inherit;font-size:1.05rem;color:#fff;background:rgba(255,255,255,.1);border:1px solid var(--gold);border-radius:999px;padding:11px 20px;width:min(240px,70vw);text-align:center}
+input:focus{outline:2px solid var(--gold)}
+#start{position:fixed;inset:0;z-index:10;background:radial-gradient(circle at 50% 40%,#1a1a3d,#05060f 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px;transition:opacity 1s}
+#start.gone{opacity:0;pointer-events:none}
+#start h1{font-size:clamp(2rem,7vw,3.4rem);letter-spacing:.08em}
+#start h1 span{color:var(--gold)}
+#start p{max-width:520px;line-height:1.9;opacity:.8;font-size:.95rem}
+#start .note{font-size:.75rem;opacity:.5}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="제주 신화 인터랙티브 미디어아트"></canvas>
+<header>
+  <div class="brand">할망의 한 동<small>설문대할망 · 인터랙티브 미디어아트</small></div>
+  <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i></div>
+  <button id="snd" aria-label="소리 켜기/끄기">♪</button>
+</header>
+<main>
+  <p id="txt" aria-live="polite"></p>
+  <div id="btns"></div>
+  <div id="hint"></div>
+  <div id="cap"></div>
+</main>
+<div id="start">
+  <h1>할망의 <span>한 동</span></h1>
+  <p>아주 오래전, 거인 설문대할망이 치마폭의 흙으로 제주를 빚었습니다.<br>
+  섬 사람들은 할망에게 옷 한 벌을 지어 드리려 했지만, 명주 한 동이 모자랐다고 합니다.<br>
+  그 모자란 한 동을, 당신이 채워 주세요.</p>
+  <button id="go">이야기 속으로</button>
+  <p class="note">소리와 함께 즐기면 더 좋아요 · 구전을 바탕으로 재구성한 이야기입니다</p>
+</div>
+
+<script>
+/* ============ 설정 ============ */
+// Claude를 연결하려면 server/scene.js 를 배포한 뒤 그 주소를 넣으세요. 비워 두면 로컬 생성으로 동작합니다.
+const CONFIG = { endpoint: '' };
+
+const $ = id => document.getElementById(id);
+const cv = $('c'), g = cv.getContext('2d');
+const txt = $('txt'), btns = $('btns'), hintEl = $('hint'), cap = $('cap');
+let W, H, DPR, L = {};
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const ease = t => t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+const rnd = (a,b)=>a+Math.random()*(b-a);
+const hex = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const rgb = (c,a=1)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+const mix = (a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+const hash = s => { let h=0; for(const ch of s) h=(h*31+ch.charCodeAt(0))>>>0; return h; };
+const seeded = i => { const x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); };
+
+/* ============ 상태 ============ */
+let S;
+function freshState(){
+  return { t:0, scene:0, opening:null, wish:null, phase:null, res:null,
+    oreums:[], rise:0, riseT:0, halla:0, hallaT:0, ribbons:0, holding:false,
+    word:'', wordA:0, gold:0, starA:1, P:[], pal:{top:hex('#05060f'),bot:hex('#0d1a2e')}, tgt:{top:hex('#05060f'),bot:hex('#0d1a2e')} };
+}
+S = freshState();
+let stars = [];
+
+const PAL = {
+  0:{listen:['#04050d','#0c1a30'], watch:['#07050f','#26143a']},
+  1:['#0b1030','#7a4466'],
+  wind:['#123040','#5aa0a8'], water:['#0a2342','#3a7fae'], fire:['#2a0d12','#b24a2a'], stone:['#181a22','#646c7a'],
+  3:['#1a0f33','#b0607f'], 4:['#050713','#22346a']
+};
+function setPal(p){ S.tgt={top:hex(p[0]),bot:hex(p[1])}; }
+function setScene(n){ S.scene=n; [...$('dots').children].forEach((d,i)=>d.classList.toggle('on',i<=n)); S.starTarget=[1,.7,.35,.5,1][n]; }
+
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR; g.setTransform(DPR,0,0,DPR,0,0);
+  L.gy=H*.7; L.hh=Math.min(H*.62,520); L.hx=W*(W<700?.13:.17);
+  L.hand=[L.hx+L.hh*.16, L.gy-L.hh*.5];
+  stars=Array.from({length:150},(_,i)=>({x:seeded(i)*W,y:seeded(i+500)*H*.65,r:seeded(i+900)*1.4+.3,tw:seeded(i+1300)*6}));
+}
+addEventListener('resize',resize); resize(); setScene(0);
+
+/* ============ 소리 ============ */
+let AC, master, soundOn=false;
+function audioStart(){
+  if(AC) return;
+  try{
+    AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0; master.connect(AC.destination);
+    [55,82.4,110.2].forEach((f,i)=>{const o=AC.createOscillator(),gn=AC.createGain();o.frequency.value=f;gn.gain.value=.05/(i+1);o.connect(gn).connect(master);o.start()});
+    const buf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const n=AC.createBufferSource(); n.buffer=buf; n.loop=true;
+    const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=420;
+    const wg=AC.createGain(); wg.gain.value=.05;
+    const lfo=AC.createOscillator(), lg=AC.createGain(); lfo.frequency.value=.11; lg.gain.value=.04; lfo.connect(lg).connect(wg.gain); lfo.start();
+    n.connect(f).connect(wg).connect(master); n.start();
+  }catch(e){ AC=null; }
+}
+function setSound(on){ soundOn=on; $('snd').classList.toggle('off',!on); if(AC){ AC.resume&&AC.resume(); master.gain.setTargetAtTime(on?.9:0,AC.currentTime,.3);} }
+function blip(freq=660,dur=.9,vol=.12){
+  if(!AC||!soundOn) return;
+  const o=AC.createOscillator(),gn=AC.createGain(); o.type='sine'; o.frequency.value=freq;
+  gn.gain.setValueAtTime(0,AC.currentTime); gn.gain.linearRampToValueAtTime(vol,AC.currentTime+.02); gn.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur);
+  o.connect(gn).connect(master); o.start(); o.stop(AC.currentTime+dur);
+}
+$('snd').onclick=()=>{ audioStart(); setSound(!soundOn); };
+
+/* ============ 텍스트/흐름 엔진 ============ */
+let typeTimer=null, typeSkip=null;
+function type(text){
+  return new Promise(res=>{
+    clearInterval(typeTimer); const chars=[...text]; let i=0; txt.textContent='';
+    const done=()=>{clearInterval(typeTimer);typeSkip=null;txt.textContent=text;res()};
+    typeSkip=done;
+    typeTimer=setInterval(()=>{ i++; txt.textContent=chars.slice(0,i).join(''); if(i>=chars.length) done(); },32);
+  });
+}
+txt.onclick=()=>typeSkip&&typeSkip();
+function hint(t){ hintEl.textContent=t||''; }
+async function ask(text, opts=[{l:'다음 ›',v:1}]){
+  btns.innerHTML=''; hint(''); await type(text);
+  return new Promise(res=>{
+    opts.forEach(o=>{ const b=document.createElement('button'); b.textContent=o.l; b.onclick=()=>{btns.innerHTML='';res(o.v)}; btns.appendChild(b); });
+    btns.firstChild&&btns.firstChild.focus({preventScroll:true});
+  });
+}
+const waitEvent = () => new Promise(r=>{ S.res=r; });
+
+/* ============ 이야기 ============ */
+const WISH = {
+  wind:{ l:'바람을 막아 주세요', r:'할망이 숨을 길게 내쉬자 바람은 오름 사이로 길을 찾아 흘렀습니다.\n그래서 제주의 바람은 가로막히지 않고, 스치듯 지나갑니다.' },
+  water:{ l:'물을 나누어 주세요', r:'할망이 발끝으로 땅을 짚자 오름 아래에서 샘이 솟았습니다.\n물은 섬 아래로 조용히 스며, 오래도록 머물렀습니다.' },
+  fire:{ l:'꺼지지 않는 불씨를 주세요', r:'할망이 한라산 꼭대기에 손을 얹자 작은 불씨가 깨어났습니다.\n그 불은 사람들의 긴 겨울 곁에 오래 머물렀습니다.' },
+  stone:{ l:'집을 지킬 단단한 돌을 주세요', r:'할망이 옷자락을 털자 검은 돌이 쏟아져 내렸습니다.\n사람들은 그 돌을 쌓아 담을 만들고, 바람 속에서 집을 지켰습니다.' }
+};
+let gen=0;
+async function run(){
+  const my=++gen;
+  // 0. 태초
+  setScene(0); setPal(PAL[0].listen);
+  const op = await ask('하늘과 바다가 한 몸으로 붙어 있던 때가 있었습니다.\n빛도, 소리도, 이름도 없던 어둠 속에서 — 누군가 몸을 일으킵니다.',
+    [{l:'숨을 죽이고 귀를 기울인다',v:'listen'},{l:'눈을 크게 뜨고 어둠을 본다',v:'watch'}]);
+  S.opening=op; setPal(PAL[0][op]); S.riseT=1; blip(op==='listen'?110:220,2.5,.15);
+  await ask(op==='listen' ? '먼 곳에서 거대한 숨소리가 파도처럼 오갑니다.\n그것은 설문대할망의 숨이었습니다.' : '어둠 한가운데서 두 눈이 별처럼 천천히 떠집니다.\n그것은 설문대할망이었습니다.');
+
+  // 1. 오름
+  setScene(1); setPal(PAL[1]);
+  await ask('할망은 치마폭에 흙을 가득 담아 바다에 부었습니다.\n치마 터진 틈으로 흙이 흘러내릴 때마다 작은 오름이 솟았습니다.\n당신의 손으로 흙을 부어 보세요.');
+  btns.innerHTML=''; S.phase='soil'; hint('바다를 눌러 흙을 부어 보세요 · 0 / 5'); txt.textContent='';
+  await waitEvent();
+  S.hallaT=1; blip(196,2.4,.16);
+  await ask('마지막 한 줌을 쏟자, 흙은 높이 쌓여 한라산이 되었습니다.\n봉우리가 하늘에 닿자 할망이 꼭대기를 떼어 던졌고, 움푹 팬 자리에는 물이 고였다고 전해집니다.');
+
+  // 2. 소원
+  setScene(2);
+  const wish = await ask('섬에 사람들이 모여 살기 시작했습니다.\n그들은 할망을 올려다보며 한 가지씩 소원을 빌었습니다.\n사람들의 마음이 되어, 무엇을 청하시겠습니까?',
+    Object.entries(WISH).map(([v,o])=>({l:o.l,v})));
+  S.wish=wish; setPal(PAL[wish]); blip({wind:392,water:330,fire:262,stone:147}[wish],2,.14);
+  await ask(WISH[wish].r);
+
+  // 3. 명주
+  setScene(3); setPal(PAL[3]);
+  await ask('사람들은 할망에게 마음으로 보답하기로 했습니다.\n"명주 백 동을 모아 주면 속옷 한 벌을 지어 입고,\n육지까지 닿는 다리를 놓아 주마."\n집집마다 가진 천을 꺼내 왔습니다. 당신도 천을 이어 주세요.');
+  btns.innerHTML=''; txt.textContent=''; S.phase='weave';
+  const hb=document.createElement('button'); hb.className='hold'; hb.textContent='꾹 눌러 명주 잇기'; btns.appendChild(hb);
+  const down=e=>{e.preventDefault();S.holding=true;hb.classList.add('down');audioStart();};
+  const up=()=>{S.holding=false;hb.classList.remove('down')};
+  hb.addEventListener('pointerdown',down); ['pointerup','pointerleave','pointercancel'].forEach(ev=>hb.addEventListener(ev,up));
+  hb.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();S.holding=true;hb.classList.add('down')}});
+  hb.addEventListener('keyup',up);
+  hint('누르고 있는 동안 천이 이어집니다 · 0 / 100 동');
+  await waitEvent();
+  S.holding=false; blip(174,2.5,.12);
+  await ask('아흔아홉 동.\n그러나 단 한 동이 모자랐습니다.\n할망의 속옷은 끝내 완성되지 못했고, 다리도 놓이지 못한 채 제주는 섬으로 남았습니다.');
+  await ask('— 그러나 이야기는 거기서 끝나지 않습니다.');
+
+  // 4. 한 동
+  setScene(4); setPal(PAL[4]);
+  await type('모자란 마지막 한 동.\n그것을 당신이 채울 수 있다면, 무엇을 건네시겠습니까?');
+  const word = await new Promise(res=>{
+    btns.innerHTML='';
+    const f=document.createElement('form'), inp=document.createElement('input'), b=document.createElement('button');
+    inp.maxLength=12; inp.placeholder='한 단어 (예: 엄마, 바다, 내일)'; inp.setAttribute('aria-label','건넬 한 단어'); b.type='submit'; b.className='go'; b.textContent='건네기';
+    f.append(inp,b); btns.appendChild(f); inp.focus({preventScroll:true});
+    f.onsubmit=e=>{e.preventDefault(); const v=inp.value.trim().slice(0,12); if(!v){inp.focus();return;} btns.innerHTML=''; res(v)};
+  });
+  S.word=word; hint('');
+  S.phase='finale'; blip(523,2.8,.2); blip(784,3,.1);
+  await type('할망이 당신의 말을 마지막 명주에 새깁니다…');
+  const out = await generate();
+  saveWord(word);
+  cap.textContent = out.src==='ai' ? '이 장면은 AI(Claude)가 당신의 단어로 지었습니다.' : '이 장면은 이야기 조각을 엮어 만들었습니다. (AI 미연결 모드)';
+  for(;;){
+    const c = await ask(out.text,[{l:'이야기 카드 저장',v:'save'},{l:'처음부터 다시 걷기',v:'again'}]);
+    if(c==='save') { saveCard(out.text); continue; }
+    break;
+  }
+  cap.textContent=''; restart();
+}
+function restart(){ clearInterval(typeTimer); S=freshState(); btns.innerHTML=''; txt.textContent=''; hint(''); setScene(0); run(); }
+
+/* ============ AI 장면 생성 ============ */
+const WISH_OPEN={wind:'바람이 거세게 불던 밤,',water:'물이 귀하던 해,',fire:'불씨 하나가 소중하던 겨울,',stone:'돌담을 쌓아 집을 지키던 날,'};
+const MOODS=[
+ {re:/그리|보고|엄마|어머|아빠|할머니|할아버지|가족|고향|추억|옛/, a:['한 사람이 바닷가에 앉아 ‘{w}’라는 말을 파도에 실어 보냈습니다.','멀리 떠난 이를 부르듯, 누군가 ‘{w}’라고 가만히 불러 보았습니다.'], b:'파도는 대답 대신 오래된 노래를 돌려주었습니다.'},
+ {re:/바다|파도|물|배|해녀|숨/, a:['물질 나간 해녀가 숨을 길게 참았다 내쉬며 ‘{w}’라는 말을 건져 올렸습니다.','바다 깊은 곳에서 ‘{w}’라는 말이 물방울처럼 떠올랐습니다.'], b:'물결은 그 말을 품고 섬을 한 바퀴 돌았습니다.'},
+ {re:/희망|꿈|빛|별|내일|새벽|소망|미래/, a:['어두운 밤, 누군가 ‘{w}’라는 말을 등불처럼 들어 올렸습니다.','오름 꼭대기에서 ‘{w}’라는 말이 별 하나로 돋아났습니다.'], b:'그 빛을 따라 사람들은 다시 아침을 향해 걸었습니다.'},
+ {re:/슬|눈물|이별|아픔|외로|죽|상처|그늘/, a:['말없이 앉아 있던 사람이 ‘{w}’라는 말을 오래 쥐고 있다가 놓아주었습니다.','젖은 돌담 위에 ‘{w}’라는 말이 조용히 내려앉았습니다.'], b:'바람은 그 말을 흔들지 않고, 곁에서 함께 머물렀습니다.'},
+ {re:/사랑|따뜻|온기|행복|웃음|정|친구/, a:['아궁이 앞에 모인 사람들이 ‘{w}’라는 말을 서로의 손에 쥐여 주었습니다.','‘{w}’라는 말이 겨울 불씨처럼 사람들 사이를 건너갔습니다.'], b:'그 온기로 긴 밤이 한결 짧아졌습니다.'},
+ {re:/바람|돌|불|흙|산|오름|한라|할망/, a:['섬이 오래 품어 온 ‘{w}’이 사람의 말이 되어 다시 돌아왔습니다.','할망의 흙에서 태어난 ‘{w}’이 사람들의 입에서 다시 피어났습니다.'], b:'섬은 자기 이름을 불린 듯 오래 고요했습니다.'}
+];
+function compose(word,wish){
+  const m=MOODS.find(m=>m.re.test(word));
+  const a=(m?m.a:['이름 붙이기 어려운 마음 하나가 ‘{w}’라는 말이 되어 건너왔습니다.'])[hash(word)%(m?m.a.length:1)].replace('{w}',word);
+  const b=m?m.b:'할망은 그 말을 가만히 받아 들었습니다.';
+  return `${WISH_OPEN[wish]||''} ${a}\n${b}\n할망은 그 말을 마지막 한 동 삼아 옷자락 끝에 이었습니다.\n이야기는 이렇게, 말하는 사람의 마음을 빌려 건너갑니다.`.trim();
+}
+async function generate(){
+  if(CONFIG.endpoint){
+    try{
+      const ac=new AbortController(), to=setTimeout(()=>ac.abort(),9000);
+      const r=await fetch(CONFIG.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:S.word,wish:S.wish,opening:S.opening}),signal:ac.signal});
+      clearTimeout(to);
+      if(r.ok){ const j=await r.json(); if(j.text&&j.text.trim()) return {text:j.text.trim(),src:'ai'}; }
+    }catch(e){}
+  }
+  return {text:compose(S.word,S.wish),src:'local'};
+}
+function loadWords(){ try{return JSON.parse(localStorage.getItem('jeju-words'))||[]}catch{return[]} }
+function saveWord(w){ try{ const a=loadWords().filter(x=>x!==w); a.unshift(w); localStorage.setItem('jeju-words',JSON.stringify(a.slice(0,16))); }catch{} }
+
+/* ============ 카드 저장 ============ */
+function saveCard(text){
+  const c=document.createElement('canvas'); c.width=1080; c.height=1350; const x=c.getContext('2d');
+  const sc=Math.max(1080/cv.width,1350/cv.height), dw=cv.width*sc, dh=cv.height*sc;
+  x.drawImage(cv,(1080-dw)/2,(1350-dh)/2,dw,dh);
+  const gr=x.createLinearGradient(0,600,0,1350); gr.addColorStop(0,'rgba(4,5,14,0)'); gr.addColorStop(.5,'rgba(4,5,14,.88)'); x.fillStyle=gr; x.fillRect(0,600,1080,750);
+  x.textAlign='center'; x.fillStyle='#ffd36b'; x.font='700 120px "Noto Serif KR",serif'; x.shadowColor='#ffd36b'; x.shadowBlur=30; x.fillText(S.word,540,230); x.shadowBlur=0;
+  x.fillStyle='#f6f1ff'; x.font='34px "Noto Serif KR",serif';
+  let y=900; text.split('\n').forEach(p=>{ let line=''; for(const ch of p){ if(x.measureText(line+ch).width>900){x.fillText(line,540,y);y+=56;line=ch}else line+=ch } x.fillText(line,540,y); y+=56; });
+  x.font='26px "Noto Serif KR",serif'; x.fillStyle='rgba(255,255,255,.6)'; x.fillText('할망의 한 동 · 설문대할망 인터랙티브 미디어아트',540,1290);
+  const a=document.createElement('a'); a.download='halmang-hand-dong.png'; a.href=c.toDataURL('image/png'); a.click();
+}
+
+/* ============ 입력(흙 붓기) ============ */
+cv.addEventListener('pointerdown',e=>{
+  if(S.phase!=='soil') return;
+  audioStart(); if(AC&&!soundOn&&!S._asked){ S._asked=1; }
+  const tx=clamp(e.clientX,W*.3,W*.95), T=1.0, a=900, [hx,hy]=L.hand;
+  const vy=(L.gy-hy-.5*a*T*T)/T, vx=(tx-hx)/T;
+  for(let i=0;i<26;i++) S.P.push({type:'soil',x:hx+rnd(-8,8),y:hy+rnd(-8,8),vx:vx+rnd(-30,30),vy:vy+rnd(-60,60),life:T+.2});
+  const r=rnd(50,100)*(H/800);
+  S.oreums.push({x:tx,r,h:r*rnd(.55,.85),born:S.t+T});
+  blip(220+S.oreums.length*70,.8,.1);
+  const n=S.oreums.length; hint(`바다를 눌러 흙을 부어 보세요 · ${Math.min(n,5)} / 5`);
+  if(n>=5){ S.phase=null; hint(''); setTimeout(()=>S.res&&S.res(),1800); }
+});
+addEventListener('keydown',e=>{ if(S.phase==='weave'&&e.code==='Space'&&e.target===document.body){S.holding=true;} });
+addEventListener('keyup',e=>{ if(e.code==='Space') S.holding=false; });
+
+/* ============ 그리기 ============ */
+function update(dt){
+  S.t+=dt;
+  for(const k of ['top','bot']) S.pal[k]=mix(S.pal[k],S.tgt[k],dt*.9);
+  S.starA+=((S.starTarget??1)-S.starA)*dt*.8;
+  if(S.riseT) S.rise=clamp(S.rise+dt/4.5,0,1);
+  if(S.hallaT) S.halla=clamp(S.halla+dt/3.2,0,1);
+  if(S.phase==='weave'){
+    if(S.holding){ S.ribbons=Math.min(99,S.ribbons+dt*99/5.5); hint(`누르고 있는 동안 천이 이어집니다 · ${Math.floor(S.ribbons)} / 100 동`); if(Math.random()<dt*6) blip(300+Math.random()*300,.5,.03);
+      if(S.ribbons>=99){ S.phase=null; hint(''); setTimeout(()=>S.res&&S.res(),900); } }
+  }
+  if(S.phase==='finale'||S.scene===4){ S.ribbons=Math.min(100,Math.max(S.ribbons,99)+dt*3); if(S.phase==='finale') { S.gold=clamp(S.gold+dt/2.5,0,1); S.wordA=clamp(S.wordA+dt/1.6,0,1);} }
+  // 환경 파티클
+  const fw=S.wish; const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(S.scene>=2&&fw==='water'&&Math.random()<dt*(reduce?20:90)) S.P.push({type:'rain',x:rnd(0,W),y:-10,vy:rnd(500,800),life:2});
+  if(S.scene>=2&&fw==='fire'&&Math.random()<dt*40) S.P.push({type:'ember',x:W*.64+rnd(-30,30),y:L.gy-H*.36*S.halla,vx:rnd(-30,30),vy:rnd(-120,-40),life:rnd(1.5,3)});
+  for(const p of S.P){
+    p.life-=dt;
+    if(p.type==='soil'){ p.vy+=900*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; }
+    else if(p.type==='rain'){ p.y+=p.vy*dt; if(p.y>L.gy+rnd(0,30)){ p.life=0; S.P.push({type:'ripple',x:p.x,y:p.y,life:.8,max:.8}); } }
+    else if(p.type==='ember'){ p.x+=(p.vx+Math.sin(S.t*3+p.y)*20)*dt; p.y+=p.vy*dt; }
+  }
+  S.P=S.P.filter(p=>p.life>0&&S.P.length<900);
+}
+function waves(layer){
+  const col=mix(S.pal.bot,[4,8,26],.62);
+  const amp=[6,9,12][layer], y0=L.gy+[0,16,34][layer], sp=[.7,1.0,1.3][layer], fr=[.012,.009,.007][layer];
+  g.beginPath(); g.moveTo(0,H);
+  for(let x=0;x<=W;x+=12) g.lineTo(x,y0+Math.sin(x*fr+S.t*sp+layer*2)*amp);
+  g.lineTo(W,H); g.closePath();
+  g.fillStyle=rgb(mix(col,S.pal.bot,[.28,.14,0][layer]),[.8,.9,.97][layer]); g.fill();
+}
+function mountainFill(){ const gr=g.createLinearGradient(0,L.gy-H*.4,0,L.gy); gr.addColorStop(0,rgb(mix(S.pal.bot,[30,40,30],.7),1)); gr.addColorStop(1,rgb(mix(S.pal.top,[8,12,12],.6),1)); return gr; }
+function hallasan(){
+  const k=ease(S.halla); if(k<=0) return;
+  const x=W*.64, r=Math.min(W*.3,H*.42), h=H*.36*k, gy=L.gy;
+  g.beginPath(); g.moveTo(x-r,gy); g.bezierCurveTo(x-r*.55,gy-h*.15,x-r*.28,gy-h*.95,x-r*.12,gy-h);
+  g.lineTo(x+r*.12,gy-h); g.bezierCurveTo(x+r*.28,gy-h*.95,x+r*.55,gy-h*.15,x+r,gy); g.closePath();
+  g.fillStyle=mountainFill(); g.fill(); g.strokeStyle='rgba(255,220,190,.22)'; g.lineWidth=1.5; g.stroke();
+  g.beginPath(); g.ellipse(x,gy-h,r*.1,r*.022,0,0,7); g.fillStyle=S.wish==='fire'?'#ff7a3a':'rgba(140,200,255,.65)'; g.fill();
+  if(S.wish==='fire'){ const gl=g.createRadialGradient(x,gy-h,0,x,gy-h,r*.8); gl.addColorStop(0,'rgba(255,120,50,.45)'); gl.addColorStop(1,'rgba(255,120,50,0)'); g.fillStyle=gl; g.fillRect(x-r,gy-h-r,r*2,r*2); }
+}
+function oreums(){
+  for(const o of [...S.oreums].sort((a,b)=>b.r-a.r)){
+    const k=ease(clamp((S.t-o.born)/1.3,0,1)); if(k<=0) continue;
+    const h=o.h*k, y=L.gy+4;
+    g.beginPath(); g.moveTo(o.x-o.r,y); g.bezierCurveTo(o.x-o.r*.5,y-h*1.15,o.x+o.r*.5,y-h*1.15,o.x+o.r,y); g.closePath();
+    g.fillStyle=mountainFill(); g.fill(); g.strokeStyle='rgba(255,220,190,.18)'; g.lineWidth=1; g.stroke();
+  }
+}
+function halmang(){
+  const k=ease(S.rise), hh=L.hh, x=L.hx, base=L.gy+(1-k)*hh*1.05+6;
+  const gl=g.createRadialGradient(x,base-hh*.6,0,x,base-hh*.6,hh*.7); gl.addColorStop(0,'rgba(255,190,150,'+(.16*k)+')'); gl.addColorStop(1,'rgba(255,190,150,0)'); g.fillStyle=gl; g.fillRect(x-hh,base-hh*1.4,hh*2,hh*1.6);
+  g.save(); g.translate(x,base);
+  g.beginPath(); g.moveTo(-hh*.36,0); g.bezierCurveTo(-hh*.2,-hh*.35,-hh*.1,-hh*.55,-hh*.07,-hh*.78);
+  g.quadraticCurveTo(0,-hh*.84,hh*.07,-hh*.78); g.bezierCurveTo(hh*.1,-hh*.55,hh*.2,-hh*.35,hh*.36,0); g.closePath();
+  g.fillStyle='#090812'; g.fill(); g.strokeStyle='rgba(255,205,175,.42)'; g.lineWidth=2; g.stroke();
+  g.beginPath(); g.arc(0,-hh*.88,hh*.058,0,7); g.fill(); g.stroke();
+  g.strokeStyle='rgba(9,8,18,.95)'; g.lineWidth=3; // 머리카락
+  for(let i=0;i<7;i++){ g.beginPath(); g.moveTo(-hh*.04+i*hh*.013,-hh*.92); g.quadraticCurveTo(-hh*.12-i*4+Math.sin(S.t*1.2+i)*6,-hh*.7,-hh*.1-i*5+Math.sin(S.t+i)*10,-hh*.5); g.stroke(); }
+  g.beginPath(); g.moveTo(hh*.05,-hh*.74); g.quadraticCurveTo(hh*.17,-hh*.6,hh*.16,-hh*.5); g.lineWidth=8; g.strokeStyle='#090812'; g.stroke(); // 치마를 든 팔
+  if(k>.9){ const a=(k-.9)*10; g.fillStyle=`rgba(255,226,170,${a*.9})`; g.shadowColor='#ffd36b'; g.shadowBlur=10; g.beginPath(); g.arc(-hh*.02,-hh*.885,2.2,0,7); g.arc(hh*.02,-hh*.885,2.2,0,7); g.fill(); g.shadowBlur=0; }
+  g.restore();
+}
+function stones(){
+  if(S.wish!=='stone'||S.scene<2) return;
+  const k=clamp((S.t-(S.stoneT??(S.stoneT=S.t)))/3,0,1), n=Math.floor(70*k);
+  for(let i=0;i<n;i++){
+    const row=i%2, x=W*.3+(i/70)*W*.7+row*8, y=L.gy+6+row*-12+seeded(i)*6, r=9+seeded(i+9)*9;
+    g.fillStyle=rgb([40+seeded(i)*30,42+seeded(i)*30,52+seeded(i)*30]); g.beginPath(); g.ellipse(x,y,r*1.2,r*.8,0,0,7); g.fill();
+    g.fillStyle='rgba(255,255,255,.1)'; g.beginPath(); g.ellipse(x-2,y-3,r*.7,r*.3,0,0,7); g.fill();
+  }
+}
+function windFx(){
+  if(S.wish!=='wind'||S.scene<2) return;
+  g.lineWidth=1.2;
+  for(let i=0;i<34;i++){
+    const y=H*.12+seeded(i)*H*.55, sp=60+seeded(i+3)*120, x=((S.t*sp+seeded(i+7)*W*1.5)%(W*1.4))-W*.2, len=60+seeded(i+5)*120;
+    g.strokeStyle=`rgba(210,245,255,${.1+seeded(i+11)*.18})`; g.beginPath(); g.moveTo(x,y); g.bezierCurveTo(x+len*.3,y-8,x+len*.7,y+8,x+len,y+Math.sin(S.t+i)*6); g.stroke();
+  }
+}
+function ribbons(){
+  const n=Math.floor(S.ribbons); if(n<=0) return; const [hx,hy]=L.hand;
+  g.lineWidth=1.5;
+  for(let i=0;i<Math.min(n,99);i++){
+    const u=i/99, ex=W*(.3+.66*u), ey=L.gy-30-Math.sin(u*Math.PI)*H*.1, w=Math.sin(S.t*.8+i)*30;
+    g.strokeStyle=`hsla(${(335+u*85)%360},62%,${62+Math.sin(i)*8}%,.28)`;
+    g.beginPath(); g.moveTo(hx,hy); g.bezierCurveTo(hx+(ex-hx)*.25,hy-H*.28-u*60+w,hx+(ex-hx)*.7,hy-H*.34+w,ex,ey); g.stroke();
+  }
+  if(S.gold>0){ // 관람자의 마지막 한 동
+    g.save(); g.strokeStyle=`rgba(255,211,107,${S.gold})`; g.lineWidth=3.5; g.shadowColor='#ffd36b'; g.shadowBlur=22;
+    g.beginPath(); g.moveTo(hx,hy); g.bezierCurveTo(hx+W*.15,hy-H*.4,W*.45,H*.05,W*.5,H*.24+Math.sin(S.t)*6); g.stroke(); g.restore();
+  }
+}
+function particles(){
+  for(const p of S.P){
+    if(p.type==='soil'){ g.fillStyle=`rgba(${120+Math.random()*40|0},${86+Math.random()*30|0},60,.9)`; g.fillRect(p.x,p.y,3,3); }
+    else if(p.type==='rain'){ g.strokeStyle='rgba(180,220,255,.45)'; g.beginPath(); g.moveTo(p.x,p.y); g.lineTo(p.x-2,p.y-14); g.stroke(); }
+    else if(p.type==='ripple'){ const t=1-p.life/p.max; g.strokeStyle=`rgba(200,230,255,${.5*(1-t)})`; g.beginPath(); g.ellipse(p.x,p.y,6+t*26,2+t*7,0,0,7); g.stroke(); }
+    else if(p.type==='ember'){ g.fillStyle=`rgba(255,${150+Math.random()*60|0},70,${clamp(p.life,0,1)})`; g.beginPath(); g.arc(p.x,p.y,2,0,7); g.fill(); }
+  }
+}
+function words(){
+  if(S.scene!==4&&S.phase!=='finale') return;
+  g.textAlign='center';
+  if(S.phase==='finale'||S.wordA>0){
+    g.save(); g.globalAlpha=S.wordA; g.font=`700 ${Math.min(W*.14,118)}px "Noto Serif KR",serif`; g.shadowColor='#ffd36b'; g.shadowBlur=40; g.fillStyle='#fff3c9';
+    g.fillText(S.word,W/2,H*.27+Math.sin(S.t)*6); g.restore();
+    loadWords().filter(w=>w!==S.word).forEach((w,i)=>{
+      const x=((seeded(i+40)*W+S.t*(6+i))%(W+120))-60, y=H*.1+seeded(i+80)*H*.36;
+      g.fillStyle=`rgba(255,240,200,${.1+.12*S.wordA})`; g.font=`${16+seeded(i)*14}px "Noto Serif KR",serif`; g.fillText(w,x,y);
+    });
+  }
+}
+function draw(){
+  const gr=g.createLinearGradient(0,0,0,H); gr.addColorStop(0,rgb(S.pal.top)); gr.addColorStop(1,rgb(S.pal.bot)); g.fillStyle=gr; g.fillRect(0,0,W,H);
+  for(const s of stars){ g.fillStyle=`rgba(255,255,255,${(.35+.65*Math.abs(Math.sin(S.t*.7+s.tw)))*S.starA})`; g.beginPath(); g.arc(s.x,s.y,s.r,0,7); g.fill(); }
+  waves(0); hallasan(); oreums(); halmang(); stones(); waves(1); waves(2);
+  windFx(); ribbons(); particles(); words();
+}
+let last=performance.now();
+function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now; update(dt); draw(); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+
+/* ============ 시작 ============ */
+$('go').onclick=()=>{ audioStart(); setSound(true); $('start').classList.add('gone'); setTimeout(()=>$('start').remove(),1100); run(); };
+</script>
+</body>
+</html>
