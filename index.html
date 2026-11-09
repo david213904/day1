@@ -3,9 +3,248 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>인사</title>
+  <title>제주 여행 가이드</title>
+  <style>
+    :root {
+      --bg: #0b1f2a;
+      --card: rgba(255, 255, 255, 0.08);
+      --text: #f4fbff;
+      --muted: #b6d0db;
+      --accent: #ff9a3c;
+      --accent2: #19c2b2;
+      --nav-h: 68px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 15% 10%, #14506a 0%, transparent 45%),
+                  radial-gradient(circle at 85% 90%, #7a3b1d 0%, transparent 40%),
+                  var(--bg);
+      background-attachment: fixed;
+      min-height: 100vh;
+      padding-top: var(--nav-h);
+    }
+
+    /* ---------- 네비게이션 ---------- */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      background: rgba(11, 31, 42, 0.75);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .logo {
+      font-size: 1.35rem; font-weight: 800; letter-spacing: -0.5px;
+      background: linear-gradient(90deg, var(--accent), #ffd36b);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      cursor: pointer; text-decoration: none;
+    }
+    nav ul { display: flex; gap: 6px; list-style: none; }
+    nav a {
+      display: block; padding: 10px 18px; border-radius: 999px;
+      color: var(--muted); text-decoration: none; font-weight: 600;
+      transition: all 0.25s;
+    }
+    nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+    nav a.active {
+      color: #1a1205;
+      background: linear-gradient(135deg, var(--accent), #ffd36b);
+      box-shadow: 0 6px 20px rgba(255, 154, 60, 0.45);
+    }
+
+    /* 햄버거 버튼 */
+    .hamburger {
+      display: none; width: 44px; height: 44px; border: 0; border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1); cursor: pointer;
+      flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+    }
+    .hamburger span {
+      display: block; width: 22px; height: 2.5px; border-radius: 2px;
+      background: var(--text); transition: transform 0.3s, opacity 0.3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+    /* ---------- 페이지 ---------- */
+    main { max-width: 1000px; margin: 0 auto; padding: 40px 20px 80px; }
+    .page { display: none; animation: fade 0.5s ease; }
+    .page.show { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+    .hero {
+      text-align: center; padding: 56px 20px; border-radius: 28px; margin-bottom: 32px;
+      background: linear-gradient(135deg, rgba(25, 194, 178, 0.35), rgba(255, 154, 60, 0.35));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+    .hero .big { font-size: 4rem; margin-bottom: 8px; }
+    .hero h1 { font-size: clamp(1.8rem, 5vw, 2.8rem); letter-spacing: -1px; margin-bottom: 10px; }
+    .hero p { color: var(--muted); font-size: 1.05rem; line-height: 1.7; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+    .card {
+      background: var(--card); border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 22px; padding: 26px; transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4); }
+    .card .emoji { font-size: 2.4rem; margin-bottom: 10px; }
+    .card h3 { margin-bottom: 8px; font-size: 1.15rem; }
+    .card p { color: var(--muted); line-height: 1.6; font-size: 0.95rem; }
+    .tag {
+      display: inline-block; margin-top: 12px; padding: 4px 12px; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 700; color: #06231f; background: var(--accent2);
+    }
+
+    footer { text-align: center; color: var(--muted); padding: 30px 20px; font-size: 0.9rem; }
+
+    /* ---------- 모바일 ---------- */
+    @media (max-width: 768px) {
+      header { padding: 0 16px; }
+      .hamburger { display: flex; }
+      nav {
+        position: fixed; top: var(--nav-h); left: 0; right: 0;
+        background: rgba(11, 31, 42, 0.97); backdrop-filter: blur(14px);
+        max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      nav.open { max-height: 420px; }
+      nav ul { flex-direction: column; padding: 14px 16px 20px; gap: 8px; }
+      nav a { padding: 14px 18px; border-radius: 14px; font-size: 1.05rem; }
+      main { padding-top: 24px; }
+      .hero { padding: 40px 16px; }
+    }
+  </style>
 </head>
 <body>
-  <h1>반갑습니다, 김태원</h1>
+
+  <header>
+    <a class="logo" href="#jeju">🌴 JEJU GUIDE</a>
+    <button class="hamburger" id="hamburger" aria-label="메뉴 열기" aria-expanded="false" aria-controls="nav">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="nav">
+      <ul>
+        <li><a href="#jeju" data-page="jeju">🏝️ 제주도</a></li>
+        <li><a href="#hotel" data-page="hotel">🏨 호텔</a></li>
+        <li><a href="#food" data-page="food">🍜 음식점</a></li>
+        <li><a href="#bus" data-page="bus">🚌 버스</a></li>
+        <li><a href="#spot" data-page="spot">📸 관광지</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 제주도 -->
+    <section class="page" id="jeju">
+      <div class="hero">
+        <div class="big">🏝️</div>
+        <h1>반갑습니다, 김태원</h1>
+        <p>바람과 돌, 그리고 바다의 섬 <b>제주도</b>에 오신 것을 환영합니다.<br>한라산부터 푸른 해변까지, 함께 여행을 떠나볼까요?</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="emoji">🌊</div><h3>푸른 바다</h3><p>협재, 함덕, 김녕 해변의 에메랄드빛 바다가 기다리고 있어요.</p></div>
+        <div class="card"><div class="emoji">⛰️</div><h3>한라산</h3><p>대한민국 최고봉에서 만나는 사계절의 절경.</p></div>
+        <div class="card"><div class="emoji">🍊</div><h3>감귤 &amp; 한라봉</h3><p>겨울에는 귤 따기 체험, 사계절 달콤한 제주 과일.</p></div>
+      </div>
+    </section>
+
+    <!-- 호텔 -->
+    <section class="page" id="hotel">
+      <div class="hero">
+        <div class="big">🏨</div>
+        <h1>제주 호텔 &amp; 숙소</h1>
+        <p>오션뷰부터 감성 독채 펜션까지, 취향에 맞는 쉼터를 골라보세요.</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="emoji">🌅</div><h3>오션뷰 리조트</h3><p>객실에서 바로 바다 일출을 감상하는 프리미엄 숙소.</p><span class="tag">중문 · 서귀포</span></div>
+        <div class="card"><div class="emoji">🏡</div><h3>감성 독채 펜션</h3><p>돌담과 마당이 있는 조용한 프라이빗 스테이.</p><span class="tag">애월 · 한림</span></div>
+        <div class="card"><div class="emoji">🛏️</div><h3>가성비 호텔</h3><p>공항과 가깝고 깔끔한 시내 비즈니스 호텔.</p><span class="tag">제주시</span></div>
+      </div>
+    </section>
+
+    <!-- 음식점 -->
+    <section class="page" id="food">
+      <div class="hero">
+        <div class="big">🍜</div>
+        <h1>제주 맛집 지도</h1>
+        <p>흑돼지, 해산물, 고기국수까지! 제주에서 꼭 먹어야 할 음식들.</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="emoji">🥓</div><h3>흑돼지 구이</h3><p>쫄깃하고 고소한 제주 대표 흑돼지, 멜젓에 찍어 한입.</p><span class="tag">필수 코스</span></div>
+        <div class="card"><div class="emoji">🍲</div><h3>고기국수</h3><p>진한 사골 육수와 두툼한 수육이 올라간 든든한 한 그릇.</p><span class="tag">현지인 추천</span></div>
+        <div class="card"><div class="emoji">🐟</div><h3>갈치조림 &amp; 회</h3><p>싱싱한 제주 앞바다 해산물을 바로 맛보세요.</p><span class="tag">해산물</span></div>
+        <div class="card"><div class="emoji">☕</div><h3>감성 카페</h3><p>바다가 보이는 카페에서 한라봉 에이드 한 잔.</p><span class="tag">디저트</span></div>
+      </div>
+    </section>
+
+    <!-- 버스 -->
+    <section class="page" id="bus">
+      <div class="hero">
+        <div class="big">🚌</div>
+        <h1>제주 버스 이용 안내</h1>
+        <p>렌터카 없이도 섬 곳곳을 편하게! 노선 유형만 알면 쉬워요.</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="emoji">🔵</div><h3>간선버스 (파랑)</h3><p>제주시와 서귀포를 잇는 주요 노선. 빠르고 배차가 좋아요.</p></div>
+        <div class="card"><div class="emoji">🟢</div><h3>지선버스 (초록)</h3><p>마을과 간선 정류장을 연결하는 지역 노선.</p></div>
+        <div class="card"><div class="emoji">🔴</div><h3>급행버스 (빨강)</h3><p>공항과 주요 관광지를 빠르게 연결하는 노선.</p></div>
+        <div class="card"><div class="emoji">📱</div><h3>실시간 앱</h3><p>도착 시간 확인과 환승 정보는 버스 앱으로 간편하게.</p></div>
+      </div>
+    </section>
+
+    <!-- 관광지 -->
+    <section class="page" id="spot">
+      <div class="hero">
+        <div class="big">📸</div>
+        <h1>제주 인기 관광지</h1>
+        <p>인생샷이 쏟아지는 제주의 명소들을 모았어요.</p>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="emoji">🌋</div><h3>성산일출봉</h3><p>유네스코 세계자연유산, 분화구 위에서 보는 일출.</p><span class="tag">동부</span></div>
+        <div class="card"><div class="emoji">🌲</div><h3>비자림</h3><p>천년 비자나무 숲길을 걷는 힐링 산책.</p><span class="tag">동부</span></div>
+        <div class="card"><div class="emoji">💧</div><h3>천지연 폭포</h3><p>밤에도 아름다운 서귀포의 대표 폭포.</p><span class="tag">남부</span></div>
+        <div class="card"><div class="emoji">🌾</div><h3>새별오름</h3><p>억새가 물결치는 노을 맛집 오름.</p><span class="tag">서부</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>© 2026 JEJU GUIDE · Made with 💙 by david213904</footer>
+
+  <script>
+    const pages = document.querySelectorAll('.page');
+    const links = document.querySelectorAll('nav a');
+    const nav = document.getElementById('nav');
+    const burger = document.getElementById('hamburger');
+
+    function show(id) {
+      if (!document.getElementById(id)) id = 'jeju';
+      pages.forEach(p => p.classList.toggle('show', p.id === id));
+      links.forEach(a => a.classList.toggle('active', a.dataset.page === id));
+      window.scrollTo({ top: 0 });
+    }
+
+    function closeMenu() {
+      nav.classList.remove('open');
+      burger.classList.remove('open');
+      burger.setAttribute('aria-expanded', 'false');
+    }
+
+    burger.addEventListener('click', () => {
+      const open = nav.classList.toggle('open');
+      burger.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', String(open));
+    });
+
+    links.forEach(a => a.addEventListener('click', () => { show(a.dataset.page); closeMenu(); }));
+    document.querySelector('.logo').addEventListener('click', () => { show('jeju'); closeMenu(); });
+    window.addEventListener('hashchange', () => show(location.hash.slice(1)));
+    window.addEventListener('resize', () => { if (window.innerWidth > 768) closeMenu(); });
+    show(location.hash.slice(1) || 'jeju');
+  </script>
 </body>
 </html>
